@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>BuddyList</title>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <script src="./local/mock/generateChatMsg.js"></script>
+    <script src="./local/twitchChatClient.js"></script>
+    <script src="./local/streamElementsWrapper.js"></script>
+    <script src="script.js"></script>
+    <script src="./local/mock/chatMsg.js"></script>
+    <script src="localtest.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <link rel="stylesheet" href="styles.css" />
+    <!--- COPY THE PASTE BEGIN -->
+
+    <link rel="stylesheet" href="https://unpkg.com/xp.css" />
+    <div class="main-container">
+      <div class="flex-col windows-dialog window">
+        <div class="title-bar">
+          <div class="title-bar-text">{{title}}</div>
+          <div class="title-bar-controls">
+            <button aria-label="Minimize"></button>
+            <button aria-label="Maximize"></button>
+            <button aria-label="Close"></button>
+          </div>
+        </div>
+        <div class="flex-col window-contents">
+
+          <!-- Window contents -->
+          <div class="flex-row file-menu">
+            <p>My Stream</p>
+            <p>People</p>
+            <p>Help</p>
+          </div>
+          <hr />
+          <div class="flex-row logo-image">
+            <img src="{{image}}" />
+          </div>
+
+          <!-- Tabs -->
+          <div class="flex-col tabs">
+            <menu role="tablist" aria-label="Tabs">
+              <button role="tab" aria-selected="true" aria-controls="online">Online</button>
+              <button role="tab" aria-controls="listsetup">List Setup</button>
+            </menu>
+
+            <article class="flex-col" role="tabpanel" id="online">
+              <div class="flex-col tab-contents">
+                  <div class="categories-container">
+                  </div>
+              </div>
+          </article>
+          </div>
+      </div>
+    </div>
+    <!--- COPY AND PASTE END -->
+  </body>
+</html>
