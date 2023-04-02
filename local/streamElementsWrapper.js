@@ -1,4 +1,4 @@
-const channel = "thugshells";
+const channel = "juliegolive";
 
 function isMod(username) {
   return username.length % 3 === 0;
