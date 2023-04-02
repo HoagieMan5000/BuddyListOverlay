@@ -1,19 +1,19 @@
 let title = undefined;
 let channelName = undefined;
 
-const defaultLoginDurationMillis = 30 * 1e3;
-const defaultAwayDurationMillis = 1 * 60 * 1e3;
-const defaultLogoutDurationMillis = defaultAwayDurationMillis + 1 * 60 * 1e3;
+const defaultLoginDurationMillis = 5 * 1e3; //30 * 1e3;
+const defaultAwayDurationMillis = 1 * 10 * 1e3; //1 * 60 * 1e3;
+const defaultLogoutDurationMillis = defaultAwayDurationMillis + 1 * 10 * 1e3;
 
 const config = {
-  statusCheckIntervalMillis: 1000,
+  statusCheckIntervalMillis: 500,
   loginDurationMillis: defaultLoginDurationMillis,
   //awayDurationMillis: 10 * 60 * 1e3,
   //logoutDurationMillis: awayDurationMillis + 5 * 60 * 1e3,
   //removeDurationMillis: logoutDurationMillis + 30 * 1e3,
   awayDurationMillis: defaultAwayDurationMillis,
-  logoutDurationMillis: defaultAwayDurationMillis + 1 * 60 * 1e3,
-  removeDurationMillis: defaultLogoutDurationMillis + 30 * 1e3,
+  logoutDurationMillis: defaultLogoutDurationMillis,
+  removeDurationMillis: defaultLogoutDurationMillis + 120 * 1e3, //30 * 1e3,
 
   ignoreBroadcaster: false,
 };
@@ -134,7 +134,7 @@ function handleEvent(eventType, eventDetail) {
         isBroadcaster: ev.badges.some((badge) => badge.type === "broadcaster"),
         message: ev.text,
         timestamp: new Date(ev.time).getTime(),
-        status: "login",
+        status: "",
       };
 
       if (config.ignoreBroadcaster && chatMessage.isBroadcaster) {
@@ -142,7 +142,7 @@ function handleEvent(eventType, eventDetail) {
       }
 
       const existingUser = users[ev.userId];
-      const isNew = !existingUser;
+      const isNew = !existingUser || existingUser.status === "logout";
       if (isNew) {
         users[ev.userId] = {
           ...chatMessage,
@@ -154,8 +154,6 @@ function handleEvent(eventType, eventDetail) {
           firstMessageTimeMillis: existingUser.firstMessageTimeMillis,
         };
       }
-
-      renderUser(users[ev.userId]);
     }
   }
 }
@@ -195,9 +193,7 @@ function renderUser(user) {
             <div class="user-status-icon">
               <img src="" />
             </div>
-            <div class="user-name">${
-          user.displayName
-        }</div>
+            <div class="user-name">${user.displayName}</div>
           </div>
         `);
         setUserStatus(user);
@@ -269,9 +265,10 @@ function updateUserStatuses() {
     user.status = newStatus;
 
     if (statusChanged) {
+      renderUser(user);
       setUserStatus(user);
       const userGroup = getUserGroup(user);
-      updateNumberInGroup(userGroup.name)
+      updateNumberInGroup(userGroup.name);
     }
   });
 
