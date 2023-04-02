@@ -37,9 +37,9 @@ const expandedIcon = "https://overlays.hoagieman.net/images/expanded-icon.png";
 const defaultImage = "https://overlays.hoagieman.net/images/AIM_97_blue.webp";
 
 const defaultIcons = {
-  login: "https://overlays.hoagieman.net/images/login-icon.png",
-  away: "https://overlays.hoagieman.net/images/away-icon.ico",
-  logout: "https://overlays.hoagieman.net/images/logout-icon.png",
+  login: "https://hoagieman5000.github.io/BuddyListOverlay/img/login-icon.png",
+  away: "https://hoagieman5000.github.io/BuddyListOverlay/img/away-icon.ico",
+  logout: "https://hoagieman5000.github.io/BuddyListOverlay/img/logout-icon.png",
 };
 
 setInterval(() => updateUsers(), statusCheckIntervalMillis);
