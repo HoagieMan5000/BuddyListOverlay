@@ -3,7 +3,7 @@ let channelName = undefined;
 
 const defaultLoginDurationMillis = 30 * 1e3;
 const defaultAwayDurationMillis = 1 * 60 * 1e3;
-const defaultLogoutDurationMillis = defaultAwayDurationMillis + 1 * 60 * 1e3
+const defaultLogoutDurationMillis = defaultAwayDurationMillis + 1 * 60 * 1e3;
 
 const config = {
   statusCheckIntervalMillis: 1000,
@@ -16,19 +16,39 @@ const config = {
   removeDurationMillis: defaultLogoutDurationMillis + 30 * 1e3,
 
   ignoreBroadcaster: false,
-}
+};
 
-const defaultImage = "https://hoagieman5000.github.io/BuddyListOverlay/img/BuddyListHeader.png";
+const defaultImage =
+  "https://hoagieman5000.github.io/BuddyListOverlay/img/BuddyListHeader.png";
 const defaultIcons = {
   login: "https://hoagieman5000.github.io/BuddyListOverlay/img/login-icon.png",
   away: "https://hoagieman5000.github.io/BuddyListOverlay/img/away-icon.ico",
-  logout: "https://hoagieman5000.github.io/BuddyListOverlay/img/logout-icon.png",
+  logout:
+    "https://hoagieman5000.github.io/BuddyListOverlay/img/logout-icon.png",
 };
 
 const defaultGroups = [
-  { name: "Mods", isInGroup: (user) => user.isMod, order: 3, enabled: true, label: "Mods" },
-  { name: "VIPs", isInGroup: (user) => user.isVip, order: 1, enabled: true, label: "VIPs"  },
-  { name: "Friends", isInGroup: (user) => true, order: 2, enabled: true, label: "Friends"  },
+  {
+    name: "Mods",
+    isInGroup: (user) => user.isMod,
+    order: 3,
+    enabled: true,
+    label: "Mods",
+  },
+  {
+    name: "VIPs",
+    isInGroup: (user) => user.isVip,
+    order: 1,
+    enabled: true,
+    label: "VIPs",
+  },
+  {
+    name: "Friends",
+    isInGroup: (user) => true,
+    order: 2,
+    enabled: true,
+    label: "Friends",
+  },
 ];
 
 const allStatuses = ["present", "login", "away", "logout"];
@@ -43,7 +63,9 @@ window.onload = (event) => {
     $(".logo-image img").attr("src", defaultImage);
   }
 
-  const sortedGroups = [...defaultGroups].filter(group => group.enabled).sort((g1, g2) => g1.order - g2.order);
+  const sortedGroups = [...defaultGroups]
+    .filter((group) => group.enabled)
+    .sort((g1, g2) => g1.order - g2.order);
   sortedGroups.forEach((group) => {
     $(".categories-container").append(`
       <div id="group-${group.name}"></div>
@@ -66,25 +88,30 @@ window.addEventListener("onWidgetLoad", function (obj) {
   // TODO move this
   $(".title-bar-text").text(title);
 
-    const modsGroup = defaultGroups.find(group => group.name === "Mods");
+  const modsGroup = defaultGroups.find((group) => group.name === "Mods");
   modsGroup.enabled = fieldData.useModGroup;
   modsGroup.label = fieldData.modGroupLabel || modsGroup.label;
 
-  const vipGroup = defaultGroups.find(group => group.name === "VIPs");
+  const vipGroup = defaultGroups.find((group) => group.name === "VIPs");
   vipGroup.enabled = fieldData.useVipGroup;
   vipGroup.label = fieldData.vipGroupLabel || vipGroup.label;
 
-  const friendsGroup = defaultGroups.find(group => group.name === "Friends");
+  const friendsGroup = defaultGroups.find((group) => group.name === "Friends");
   friendsGroup.label = fieldData.friendsGroupLabel || friendsGroup.label;
 
   config.ignoreBroadcaster = fieldData.ignoreBroadcaster;
 
-  config.loginDurationMillis = fieldData.loginDelaySec ? fieldData.loginDelaySec * 1e3 : config.loginDurationMillis;
-  config.awayDurationMillis = fieldData.awayDelaySec ? fieldData.awayDelaySec * 1e3 : config.awayDurationMillis;
-  config.logoutDurationMillis = fieldData.logoutDelaySec ? config.awayDurationMillis + fieldData.logoutDelaySec * 1e3 : config.logoutDurationMillis;
-  config.removeDurationMillis = config.logoutDurationMillis + 30 * 1e3,
-
-  console.log({config})
+  config.loginDurationMillis = fieldData.loginDelaySec
+    ? fieldData.loginDelaySec * 1e3
+    : config.loginDurationMillis;
+  config.awayDurationMillis = fieldData.awayDelaySec
+    ? fieldData.awayDelaySec * 1e3
+    : config.awayDurationMillis;
+  config.logoutDurationMillis = fieldData.logoutDelaySec
+    ? config.awayDurationMillis + fieldData.logoutDelaySec * 1e3
+    : config.logoutDurationMillis;
+  (config.removeDurationMillis = config.logoutDurationMillis + 30 * 1e3),
+    console.log({ config });
 });
 
 window.addEventListener("onEventReceived", function (obj) {
@@ -168,14 +195,14 @@ function renderUser(user) {
             <div class="user-status-icon">
               <img src="" />
             </div>
-            <div class="user-name user-name-${user.status}">${
+            <div class="user-name">${
           user.displayName
         }</div>
           </div>
         `);
-        updateNumberInGroup(group.name)
+        setUserStatus(user);
+        updateNumberInGroup(group.name);
       }
-      setUserStatus(user);
     }
   }
 }
@@ -204,7 +231,9 @@ function getUserId(user) {
 }
 
 function getUserGroup(user) {
-  const group = defaultGroups.find((group) => group.enabled && group.isInGroup(user));
+  const group = defaultGroups.find(
+    (group) => group.enabled && group.isInGroup(user)
+  );
   return group;
 }
 
@@ -241,20 +270,23 @@ function updateUserStatuses() {
 
     if (statusChanged) {
       setUserStatus(user);
+      const userGroup = getUserGroup(user);
+      updateNumberInGroup(userGroup.name)
     }
   });
 
   removeUserIds.forEach((userId) => {
+    const userGroup = getUserGroup(users[userId]);
     removeUser(users[userId]);
-    updateNumberInGroup(group.name)
+    updateNumberInGroup(userGroup?.name);
     delete users[userId];
   });
 }
 
 function updateNumberInGroup(groupName) {
-  const numUsersInGroup = $(`#group-${groupName}`).find(
-    ".user-name"
-  ).length;
+  const numUsersInGroup = $(`#group-${groupName}`)
+    .find(".user-row")
+    .not(".status-logout").length;
   $(`#group-${groupName} .group-number`).text(numUsersInGroup);
 }
 
