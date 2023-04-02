@@ -52,53 +52,127 @@ const defaultGroups = [
 ];
 
 const allStatuses = ["present", "login", "away", "logout"];
+
 const users = {};
 
 setInterval(() => updateUsers(), config.statusCheckIntervalMillis);
 
 window.onload = (event) => {
-  const logoImgSrc = $(".logo-image img").attr("src");
-  if (logoImgSrc === "{{image}}") {
-    console.log("Using default logo...");
-    $(".logo-image img").attr("src", defaultImage);
-  }
-
-  const sortedGroups = [...defaultGroups]
-    .filter((group) => group.enabled)
-    .sort((g1, g2) => g1.order - g2.order);
-  sortedGroups.forEach((group) => {
-    $(".categories-container").append(`
-      <div id="group-${group.name}"></div>
-    `);
-  });
-
-  const groupElements = renderGroups();
-  groupElements.forEach((groupElement) => {
-    $(`#${groupElement.id}`).replaceWith(groupElement.element);
-  });
+  initialRender();
 };
 
 window.addEventListener("onWidgetLoad", function (obj) {
   const detail = obj.detail;
   const fieldData = detail.fieldData;
 
-  channelName = detail.channel.username;
+  setTitle(fieldData);
+  configureGroups(fieldData);
+  setConfiguration(fieldData);
+});
 
-  title = fieldData.title || `${channelName}'s Buddy list`;
-  // TODO move this
-  $(".title-bar-text").text(title);
+window.addEventListener("onEventReceived", function (obj) {
+  handleEvent("onEventReceived", obj.detail);
+});
 
-  const modsGroup = defaultGroups.find((group) => group.name === "Mods");
-  modsGroup.enabled = fieldData.useModGroup;
-  modsGroup.label = fieldData.modGroupLabel || modsGroup.label;
+function handleEvent(eventType, eventDetail) {
+  if (eventType === "onEventReceived") {
+    const detail = eventDetail;
+    if (detail?.listener === "message") {
+      const eventData = detail.event.data;
+      handleMessage(eventData);
+    }
+  }
+}
 
-  const vipGroup = defaultGroups.find((group) => group.name === "VIPs");
-  vipGroup.enabled = fieldData.useVipGroup;
-  vipGroup.label = fieldData.vipGroupLabel || vipGroup.label;
+function handleMessage(eventData) {
+  const chatMessage = {
+    userId: eventData.userId,
+    username: eventData.displayName,
+    displayName: eventData.displayName,
+    isMod: eventData.badges.some(
+      (badge) => badge.type === "moderator" || badge.type === "mod"
+    ),
+    isVip: eventData.badges.some((badge) => badge.type === "vip"),
+    isBroadcaster: eventData.badges.some(
+      (badge) => badge.type === "broadcaster"
+    ),
+    message: eventData.text,
+    timestamp: new Date(eventData.time).getTime(),
+    status: "",
+  };
 
-  const friendsGroup = defaultGroups.find((group) => group.name === "Friends");
-  friendsGroup.label = fieldData.friendsGroupLabel || friendsGroup.label;
+  if (config.ignoreBroadcaster && chatMessage.isBroadcaster) {
+    return;
+  }
 
+  const existingUser = users[eventData.userId];
+  const isNew = !existingUser || existingUser.status === "logout";
+  if (isNew) {
+    users[eventData.userId] = {
+      ...chatMessage,
+      firstMessageTimeMillis: chatMessage.timestamp,
+    };
+  } else {
+    users[eventData.userId] = {
+      ...chatMessage,
+      firstMessageTimeMillis: existingUser.firstMessageTimeMillis,
+    };
+  }
+}
+
+function updateUsers() {
+  // Update the user data
+  updateUserStatuses();
+}
+
+function updateUserStatuses() {
+  const now = Date.now();
+
+  const removeUserIds = [];
+  Object.values(users).forEach((user) => {
+    const firstMessageTimeMillis = user.firstMessageTimeMillis;
+    const lastMessageMillis = user.timestamp;
+    const timeSinceFirstMessage = now - firstMessageTimeMillis;
+    const timeSinceLastMessage = now - lastMessageMillis;
+
+    let newStatus = "present";
+    if (timeSinceFirstMessage < config.loginDurationMillis) {
+      newStatus = "login";
+    }
+
+    if (timeSinceLastMessage > config.awayDurationMillis) {
+      newStatus = "away";
+    }
+
+    if (timeSinceLastMessage > config.logoutDurationMillis) {
+      newStatus = "logout";
+    }
+
+    if (timeSinceLastMessage > config.removeDurationMillis) {
+      changed = true;
+      removeUserIds.push(user.userId);
+    }
+
+    const statusChanged = user.status !== newStatus;
+    user.status = newStatus;
+
+    if (statusChanged) {
+      renderUser(user);
+      setUserStatus(user);
+      const userGroup = getUserGroup(user);
+      updateNumberInGroup(userGroup.name);
+    }
+  });
+
+  removeUserIds.forEach((userId) => {
+    const userGroup = getUserGroup(users[userId]);
+    removeUser(users[userId]);
+    updateNumberInGroup(userGroup?.name);
+    delete users[userId];
+  });
+}
+
+function setConfiguration(fieldData) {
   config.ignoreBroadcaster = fieldData.ignoreBroadcaster;
 
   config.loginDurationMillis = fieldData.loginDelaySec
@@ -110,60 +184,60 @@ window.addEventListener("onWidgetLoad", function (obj) {
   config.logoutDurationMillis = fieldData.logoutDelaySec
     ? config.awayDurationMillis + fieldData.logoutDelaySec * 1e3
     : config.logoutDurationMillis;
-  (config.removeDurationMillis = config.logoutDurationMillis + 30 * 1e3),
-    console.log({ config });
-});
-
-window.addEventListener("onEventReceived", function (obj) {
-  handleEvent("onEventReceived", obj.detail);
-});
-
-function handleEvent(eventType, eventDetail) {
-  if (eventType === "onEventReceived") {
-    const detail = eventDetail;
-    if (detail?.listener === "message") {
-      const ev = detail.event.data;
-      const chatMessage = {
-        userId: ev.userId,
-        username: ev.displayName,
-        displayName: ev.displayName,
-        isMod: ev.badges.some(
-          (badge) => badge.type === "moderator" || badge.type === "mod"
-        ),
-        isVip: ev.badges.some((badge) => badge.type === "vip"),
-        isBroadcaster: ev.badges.some((badge) => badge.type === "broadcaster"),
-        message: ev.text,
-        timestamp: new Date(ev.time).getTime(),
-        status: "",
-      };
-
-      if (config.ignoreBroadcaster && chatMessage.isBroadcaster) {
-        return;
-      }
-
-      const existingUser = users[ev.userId];
-      const isNew = !existingUser || existingUser.status === "logout";
-      if (isNew) {
-        users[ev.userId] = {
-          ...chatMessage,
-          firstMessageTimeMillis: chatMessage.timestamp,
-        };
-      } else {
-        users[ev.userId] = {
-          ...chatMessage,
-          firstMessageTimeMillis: existingUser.firstMessageTimeMillis,
-        };
-      }
-    }
-  }
+  config.removeDurationMillis = config.logoutDurationMillis + 30 * 1e3;
 }
 
-function updateUsers() {
-  // Update the user data
-  updateUserStatuses();
+function configureGroups(fieldData) {
+  const modsGroup = defaultGroups.find((group) => group.name === "Mods");
+  modsGroup.enabled = fieldData.useModGroup;
+  modsGroup.label = fieldData.modGroupLabel || modsGroup.label;
+
+  const vipGroup = defaultGroups.find((group) => group.name === "VIPs");
+  vipGroup.enabled = fieldData.useVipGroup;
+  vipGroup.label = fieldData.vipGroupLabel || vipGroup.label;
+
+  const friendsGroup = defaultGroups.find((group) => group.name === "Friends");
+  friendsGroup.label = fieldData.friendsGroupLabel || friendsGroup.label;
+}
+
+function getUserId(user) {
+  return `user-${user.userId}`;
+}
+
+function getUserGroup(user) {
+  const group = defaultGroups.find(
+    (group) => group.enabled && group.isInGroup(user)
+  );
+  return group;
+}
+
+/* Rendering */
+
+function initialRender() {
+  setLogo();
+  renderGroupContainers();
+  renderGroups();
+}
+
+function renderGroupContainers() {
+  const sortedGroups = [...defaultGroups]
+    .filter((group) => group.enabled)
+    .sort((g1, g2) => g1.order - g2.order);
+  sortedGroups.forEach((group) => {
+    $(".categories-container").append(`
+    <div id="group-${group.name}"></div>
+  `);
+  });
 }
 
 function renderGroups() {
+  const groupElements = renderGroupElements();
+  groupElements.forEach((groupElement) => {
+    $(`#${groupElement.id}`).replaceWith(groupElement.element);
+  });
+}
+
+function renderGroupElements() {
   const elements = defaultGroups.map((group) => ({
     element: `
       <div id="group-${group.name}" class="user-group">
@@ -222,62 +296,12 @@ function removeUser(user) {
   $(`#${getUserId(user)}`).remove();
 }
 
-function getUserId(user) {
-  return `user-${user.userId}`;
-}
-
-function getUserGroup(user) {
-  const group = defaultGroups.find(
-    (group) => group.enabled && group.isInGroup(user)
-  );
-  return group;
-}
-
-function updateUserStatuses() {
-  const now = Date.now();
-
-  const removeUserIds = [];
-  Object.values(users).forEach((user) => {
-    const firstMessageTimeMillis = user.firstMessageTimeMillis;
-    const lastMessageMillis = user.timestamp;
-    const timeSinceFirstMessage = now - firstMessageTimeMillis;
-    const timeSinceLastMessage = now - lastMessageMillis;
-
-    let newStatus = "present";
-    if (timeSinceFirstMessage < config.loginDurationMillis) {
-      newStatus = "login";
-    }
-
-    if (timeSinceLastMessage > config.awayDurationMillis) {
-      newStatus = "away";
-    }
-
-    if (timeSinceLastMessage > config.logoutDurationMillis) {
-      newStatus = "logout";
-    }
-
-    if (timeSinceLastMessage > config.removeDurationMillis) {
-      changed = true;
-      removeUserIds.push(user.userId);
-    }
-
-    const statusChanged = user.status !== newStatus;
-    user.status = newStatus;
-
-    if (statusChanged) {
-      renderUser(user);
-      setUserStatus(user);
-      const userGroup = getUserGroup(user);
-      updateNumberInGroup(userGroup.name);
-    }
-  });
-
-  removeUserIds.forEach((userId) => {
-    const userGroup = getUserGroup(users[userId]);
-    removeUser(users[userId]);
-    updateNumberInGroup(userGroup?.name);
-    delete users[userId];
-  });
+function setLogo() {
+  const logoImgSrc = $(".logo-image img").attr("src");
+  if (logoImgSrc === "{{image}}") {
+    console.log("Using default logo...");
+    $(".logo-image img").attr("src", defaultImage);
+  }
 }
 
 function updateNumberInGroup(groupName) {
@@ -285,6 +309,11 @@ function updateNumberInGroup(groupName) {
     .find(".user-row")
     .not(".status-logout").length;
   $(`#group-${groupName} .group-number`).text(numUsersInGroup);
+}
+
+function setTitle(fieldData) {
+  title = fieldData.title || `${channelName}'s Buddy list`;
+  $(".title-bar-text").text(title);
 }
 
 const groupOpenIcon = `
