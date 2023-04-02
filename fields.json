@@ -36,7 +36,22 @@
   },
   "ignoreBroadcaster": {
     "type": "checkbox",
-    "label": "Ignore broadcaster:",
+    "label": "Ignore broadcaster",
     "value": "true"
+  },
+  "loginDelaySec": {
+    "type": "number",
+    "label": "Login Delay (seconds)",
+    "value": 30
+  },
+  "awayDelaySec": {
+    "type": "number",
+    "label": "Away Delay (seconds)",
+    "value": 300
+  },
+  "logoutDelaySec": {
+    "type": "number",
+    "label": "Logout Delay (seconds)",
+    "value": 300
   }
 }

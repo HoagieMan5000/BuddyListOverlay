@@ -1,14 +1,22 @@
 let title = undefined;
 let channelName = undefined;
 
-const statusCheckIntervalMillis = 1000;
-const loginDurationMillis = 30 * 1e3;
-//const awayDurationMillis = 10 * 60 * 1e3;
-//const logoutDurationMillis = awayDurationMillis + 5 * 60 * 1e3;
-//const removeDurationMillis = logoutDurationMillis + 30 * 1e3;
-const awayDurationMillis = 1 * 60 * 1e3;
-const logoutDurationMillis = awayDurationMillis + 1 * 60 * 1e3;
-const removeDurationMillis = logoutDurationMillis + 30 * 1e3;
+const defaultLoginDurationMillis = 30 * 1e3;
+const defaultAwayDurationMillis = 1 * 60 * 1e3;
+const defaultLogoutDurationMillis = defaultAwayDurationMillis + 1 * 60 * 1e3
+
+const config = {
+  statusCheckIntervalMillis: 1000,
+  loginDurationMillis: defaultLoginDurationMillis,
+  //awayDurationMillis: 10 * 60 * 1e3,
+  //logoutDurationMillis: awayDurationMillis + 5 * 60 * 1e3,
+  //removeDurationMillis: logoutDurationMillis + 30 * 1e3,
+  awayDurationMillis: defaultAwayDurationMillis,
+  logoutDurationMillis: defaultAwayDurationMillis + 1 * 60 * 1e3,
+  removeDurationMillis: defaultLogoutDurationMillis + 30 * 1e3,
+
+  ignoreBroadcaster: false,
+}
 
 const defaultImage = "https://hoagieman5000.github.io/BuddyListOverlay/img/BuddyListHeader.png";
 const defaultIcons = {
@@ -19,14 +27,14 @@ const defaultIcons = {
 
 const defaultGroups = [
   { name: "Mods", isInGroup: (user) => user.isMod, order: 3, enabled: true, label: "Mods" },
-  { name: "VIPs", isInGroup: (user) => user.isVip, order: 1, enabled: false, label: "VIPs"  },
+  { name: "VIPs", isInGroup: (user) => user.isVip, order: 1, enabled: true, label: "VIPs"  },
   { name: "Friends", isInGroup: (user) => true, order: 2, enabled: true, label: "Friends"  },
 ];
 
 const allStatuses = ["present", "login", "away", "logout"];
 const users = {};
 
-setInterval(() => updateUsers(), statusCheckIntervalMillis);
+setInterval(() => updateUsers(), config.statusCheckIntervalMillis);
 
 window.onload = (event) => {
   const logoImgSrc = $(".logo-image img").attr("src");
@@ -58,13 +66,25 @@ window.addEventListener("onWidgetLoad", function (obj) {
   // TODO move this
   $(".title-bar-text").text(title);
 
-  const modsGroup = defaultGroups.find(group => group.name === "Mods");
-  modsGroup.enabled = fields.useModGroup;
-  modsGroup.label = fields.modGroupLabel || modGroup.label;
+    const modsGroup = defaultGroups.find(group => group.name === "Mods");
+  modsGroup.enabled = fieldData.useModGroup;
+  modsGroup.label = fieldData.modGroupLabel || modsGroup.label;
 
   const vipGroup = defaultGroups.find(group => group.name === "VIPs");
-  vipGroup.enabled = fields.useVipGroup;
-  vipGroup.label = fields.vipGroupLabel || vipGroup.label;
+  vipGroup.enabled = fieldData.useVipGroup;
+  vipGroup.label = fieldData.vipGroupLabel || vipGroup.label;
+
+  const friendsGroup = defaultGroups.find(group => group.name === "Friends");
+  friendsGroup.label = fieldData.friendsGroupLabel || friendsGroup.label;
+
+  config.ignoreBroadcaster = fieldData.ignoreBroadcaster;
+
+  config.loginDurationMillis = fieldData.loginDelaySec ? fieldData.loginDelaySec * 1e3 : config.loginDurationMillis;
+  config.awayDurationMillis = fieldData.awayDelaySec ? fieldData.awayDelaySec * 1e3 : config.awayDurationMillis;
+  config.logoutDurationMillis = fieldData.logoutDelaySec ? config.awayDurationMillis + fieldData.logoutDelaySec * 1e3 : config.logoutDurationMillis;
+  config.removeDurationMillis = config.logoutDurationMillis + 30 * 1e3,
+
+  console.log({config})
 });
 
 window.addEventListener("onEventReceived", function (obj) {
@@ -89,6 +109,10 @@ function handleEvent(eventType, eventDetail) {
         timestamp: new Date(ev.time).getTime(),
         status: "login",
       };
+
+      if (config.ignoreBroadcaster && chatMessage.isBroadcaster) {
+        return;
+      }
 
       const existingUser = users[ev.userId];
       const isNew = !existingUser;
@@ -149,10 +173,7 @@ function renderUser(user) {
         }</div>
           </div>
         `);
-        const numUsersInGroup = $(`#group-${group.name}`).find(
-          ".user-name"
-        ).length;
-        $(`#group-${group.name} .group-number`).text(numUsersInGroup);
+        updateNumberInGroup(group.name)
       }
       setUserStatus(user);
     }
@@ -198,19 +219,19 @@ function updateUserStatuses() {
     const timeSinceLastMessage = now - lastMessageMillis;
 
     let newStatus = "present";
-    if (timeSinceFirstMessage < loginDurationMillis) {
+    if (timeSinceFirstMessage < config.loginDurationMillis) {
       newStatus = "login";
     }
 
-    if (timeSinceLastMessage > awayDurationMillis) {
+    if (timeSinceLastMessage > config.awayDurationMillis) {
       newStatus = "away";
     }
 
-    if (timeSinceLastMessage > logoutDurationMillis) {
+    if (timeSinceLastMessage > config.logoutDurationMillis) {
       newStatus = "logout";
     }
 
-    if (timeSinceLastMessage > removeDurationMillis) {
+    if (timeSinceLastMessage > config.removeDurationMillis) {
       changed = true;
       removeUserIds.push(user.userId);
     }
@@ -225,12 +246,16 @@ function updateUserStatuses() {
 
   removeUserIds.forEach((userId) => {
     removeUser(users[userId]);
+    updateNumberInGroup(group.name)
     delete users[userId];
   });
 }
 
-function setGroupLabel(fields, group) {
-  
+function updateNumberInGroup(groupName) {
+  const numUsersInGroup = $(`#group-${groupName}`).find(
+    ".user-name"
+  ).length;
+  $(`#group-${groupName} .group-number`).text(numUsersInGroup);
 }
 
 const groupOpenIcon = `
