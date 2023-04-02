@@ -8,5 +8,35 @@
     "type": "image-input",
     "label": "Image:",
     "value": ""
+  },
+  "useModGroup": {
+    "type": "checkbox",
+    "label": "Use Mod Group",
+    "value": "true"
+  },
+  "modGroupLabel": {
+    "type": "string",
+    "label": "Mod Group Label:",
+    "value": "Mods"
+  },
+  "useVipGroup": {
+    "type": "checkbox",
+    "label": "Use VIP Group",
+    "value": "true"
+  },
+  "vipGroupLabel": {
+    "type": "string",
+    "label": "VIP Group Label:",
+    "value": "VIPs"
+  },
+  "friendsGroupLabel": {
+    "type": "string",
+    "label": "Friends Group Label:",
+    "value": "Friends"
+  },
+  "ignoreBroadcaster": {
+    "type": "checkbox",
+    "label": "Ignore broadcaster:",
+    "value": "true"
   }
 }

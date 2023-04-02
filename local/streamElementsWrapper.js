@@ -1,4 +1,4 @@
-const channel = "juliegolive";
+const channel = "jonlimusic";
 
 function isMod(username) {
   return username.length % 3 === 0;
@@ -12,7 +12,7 @@ function isVip(username) {
 }
 
 const twitchClient = new TwitchChatClient(
-  "justinfan777",
+  "justinfan920",
   channel,
   undefined,
   (msg) => {

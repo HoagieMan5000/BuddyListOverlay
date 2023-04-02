@@ -10,41 +10,23 @@ const awayDurationMillis = 1 * 60 * 1e3;
 const logoutDurationMillis = awayDurationMillis + 1 * 60 * 1e3;
 const removeDurationMillis = logoutDurationMillis + 30 * 1e3;
 
-const allStatuses = ["present", "login", "away", "logout"];
-
-const users = {};
-
-const defaultGroups = [
-  { name: "Mods", isInGroup: (user) => user.isMod, order: 3 },
-  { name: "VIPs", isInGroup: (user) => user.isVip, order: 1 },
-  { name: "Friends", isInGroup: (user) => true, order: 2 },
-];
-
-const groupOpenIcon = `
-<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-  x="0px" y="0px" height="100%" width="8px" viewBox="0 0 256 256" style="enable-background:new 0 0 256 256;"
-  xml:space="preserve">
-  <style type="text/css">
-  .st0{stroke:#000000;stroke-miterlimit:10;}
-  </style>
-  <polygon class="st0" points="11,53.78 245,53.78 128,202.22 "/>
-</svg>
-`;
-
-const expandedIcon = "https://overlays.hoagieman.net/images/expanded-icon.png";
-
-// Porbably shouldn't use this one, change it to a more generic custom one
-const defaultImage = "https://overlays.hoagieman.net/images/AIM_97_blue.webp";
-
+const defaultImage = "https://hoagieman5000.github.io/BuddyListOverlay/img/BuddyListHeader.png";
 const defaultIcons = {
   login: "https://hoagieman5000.github.io/BuddyListOverlay/img/login-icon.png",
   away: "https://hoagieman5000.github.io/BuddyListOverlay/img/away-icon.ico",
   logout: "https://hoagieman5000.github.io/BuddyListOverlay/img/logout-icon.png",
 };
 
-setInterval(() => updateUsers(), statusCheckIntervalMillis);
+const defaultGroups = [
+  { name: "Mods", isInGroup: (user) => user.isMod, order: 3, enabled: true, label: "Mods" },
+  { name: "VIPs", isInGroup: (user) => user.isVip, order: 1, enabled: false, label: "VIPs"  },
+  { name: "Friends", isInGroup: (user) => true, order: 2, enabled: true, label: "Friends"  },
+];
 
-let doRender = true;
+const allStatuses = ["present", "login", "away", "logout"];
+const users = {};
+
+setInterval(() => updateUsers(), statusCheckIntervalMillis);
 
 window.onload = (event) => {
   const logoImgSrc = $(".logo-image img").attr("src");
@@ -53,7 +35,7 @@ window.onload = (event) => {
     $(".logo-image img").attr("src", defaultImage);
   }
 
-  const sortedGroups = [...defaultGroups].sort((g1, g2) => g1.order - g2.order);
+  const sortedGroups = [...defaultGroups].filter(group => group.enabled).sort((g1, g2) => g1.order - g2.order);
   sortedGroups.forEach((group) => {
     $(".categories-container").append(`
       <div id="group-${group.name}"></div>
@@ -75,6 +57,14 @@ window.addEventListener("onWidgetLoad", function (obj) {
   title = fieldData.title || `${channelName}'s Buddy list`;
   // TODO move this
   $(".title-bar-text").text(title);
+
+  const modsGroup = defaultGroups.find(group => group.name === "Mods");
+  modsGroup.enabled = fields.useModGroup;
+  modsGroup.label = fields.modGroupLabel || modGroup.label;
+
+  const vipGroup = defaultGroups.find(group => group.name === "VIPs");
+  vipGroup.enabled = fields.useVipGroup;
+  vipGroup.label = fields.vipGroupLabel || vipGroup.label;
 });
 
 window.addEventListener("onEventReceived", function (obj) {
@@ -132,7 +122,7 @@ function renderGroups() {
           <div class="user-group-icon">
             ${groupOpenIcon}
           </div>
-          <div id="group-${group.name}" class="user-group-name">${group.name} (<span class="group-number">0</span>)</div>
+          <div id="group-${group.name}" class="user-group-name">${group.label} (<span class="group-number">0</span>)</div>
         </div>
       </div>
   `,
@@ -193,7 +183,7 @@ function getUserId(user) {
 }
 
 function getUserGroup(user) {
-  const group = defaultGroups.find((group) => group.isInGroup(user));
+  const group = defaultGroups.find((group) => group.enabled && group.isInGroup(user));
   return group;
 }
 
@@ -238,3 +228,18 @@ function updateUserStatuses() {
     delete users[userId];
   });
 }
+
+function setGroupLabel(fields, group) {
+  
+}
+
+const groupOpenIcon = `
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+  x="0px" y="0px" height="100%" width="8px" viewBox="0 0 256 256" style="enable-background:new 0 0 256 256;"
+  xml:space="preserve">
+  <style type="text/css">
+  .st0{stroke:#000000;stroke-miterlimit:10;}
+  </style>
+  <polygon class="st0" points="11,53.78 245,53.78 128,202.22 "/>
+</svg>
+`;
