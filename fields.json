@@ -1,0 +1,12 @@
+{
+  "title": {
+    "type": "string",
+    "label": "Title:",
+    "value": "My Buddy List"
+  },
+  "image": {
+    "type": "image-input",
+    "label": "Image:",
+    "value": ""
+  }
+}
