@@ -1,4 +1,4 @@
-const channel = "ortopilot";
+const channel = "kimariesky";
 
 function isMod(username) {
   return username.length % 3 === 0;

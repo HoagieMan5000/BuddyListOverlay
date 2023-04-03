@@ -1,21 +1,20 @@
 let title = undefined;
 let channelName = undefined;
 
-const defaultLoginDurationMillis = 5 * 1e3; //30 * 1e3;
-const defaultAwayDurationMillis = 1 * 10 * 1e3; //1 * 60 * 1e3;
-const defaultLogoutDurationMillis = defaultAwayDurationMillis + 1 * 10 * 1e3;
+const defaultLoginDurationMillis = 30 * 1e3;
+const defaultAwayDurationMillis = defaultLoginDurationMillis + 5 * 60 * 1e3;
+const defaultLogoutDurationMillis = defaultAwayDurationMillis + 5 * 60 * 1e3;
 
 const config = {
   statusCheckIntervalMillis: 500,
   loginDurationMillis: defaultLoginDurationMillis,
-  //awayDurationMillis: 10 * 60 * 1e3,
-  //logoutDurationMillis: awayDurationMillis + 5 * 60 * 1e3,
-  //removeDurationMillis: logoutDurationMillis + 30 * 1e3,
   awayDurationMillis: defaultAwayDurationMillis,
   logoutDurationMillis: defaultLogoutDurationMillis,
-  removeDurationMillis: defaultLogoutDurationMillis + 120 * 1e3, //30 * 1e3,
+  removeDurationMillis: defaultLogoutDurationMillis + 30 * 1e3,
 
   ignoreBroadcaster: false,
+  playSounds: true,
+  alertVolume: 0.6,
 };
 
 const defaultImage =
@@ -129,6 +128,7 @@ function updateUserStatuses() {
   const now = Date.now();
 
   const removeUserIds = [];
+  const audioToPlay = new Set();
   Object.values(users).forEach((user) => {
     const firstMessageTimeMillis = user.firstMessageTimeMillis;
     const lastMessageMillis = user.timestamp;
@@ -161,8 +161,11 @@ function updateUserStatuses() {
       setUserStatus(user);
       const userGroup = getUserGroup(user);
       updateNumberInGroup(userGroup.name);
+      audioToPlay.add(user.status)
     }
   });
+
+  [...audioToPlay.values()].forEach(type => playSound(type))
 
   removeUserIds.forEach((userId) => {
     const userGroup = getUserGroup(users[userId]);
@@ -326,3 +329,20 @@ const groupOpenIcon = `
   <polygon class="st0" points="11,53.78 245,53.78 128,202.22 "/>
 </svg>
 `;
+
+function playSound(type) {
+  const vol = config.alertVolume ?? 1;
+  if (config.playSounds) {
+    if (type === "login") {
+      const audio = new Audio("audio/dooropen.wav");
+      audio.loop = false;
+      audio.volume = vol;
+      audio.play();
+    } else if (type === "logout") {
+      const audio = new Audio("audio/doorslam.wav");
+      audio.loop = false;
+      audio.volume = vol;
+      audio.play();
+    }
+  }
+}
