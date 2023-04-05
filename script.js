@@ -58,12 +58,21 @@ const defaultGroups = [
 
 const allStatuses = ["present", "login", "away", "logout"];
 
-const users = {};
+let users = {};
 
 setInterval(() => updateUsers(), config.statusCheckIntervalMillis);
+setInterval(() => SE_API.store.set("userData", users), 10000)
 
 window.onload = (event) => {
-  initialRender();
+  SE_API.store.get("userData").then((userData) => {
+    if (userData) {
+      users = {
+        ...userData,
+      };
+      updateUsers()
+    }
+    initialRender();
+  });
 };
 
 window.addEventListener("onWidgetLoad", function (obj) {
@@ -112,7 +121,10 @@ function handleMessage(eventData) {
     return;
   }
 
-  if (config.usersToIgnore && config.usersToIgnore.includes(chatMessage.username?.toLowerCase())) {
+  if (
+    config.usersToIgnore &&
+    config.usersToIgnore.includes(chatMessage.username?.toLowerCase())
+  ) {
     return;
   }
 
@@ -168,12 +180,14 @@ function updateUserStatuses() {
     const statusChanged = user.status !== newStatus;
     user.status = newStatus;
 
+    renderUser(user);
     if (statusChanged) {
-      renderUser(user);
       setUserStatus(user);
       const userGroup = getUserGroup(user);
       updateNumberInGroup(userGroup.name);
-      audioToPlay.add(user.status);
+      if (statusChanged) {
+        audioToPlay.add(user.status);
+      }
     }
   });
 
@@ -194,18 +208,23 @@ function setConfiguration(fieldData) {
     ? fieldData.loginDelaySec * 1e3
     : config.loginDurationMillis;
 
-  config.awayDurationMillis = config.loginDurationMillis + (fieldData.awayDelaySec
-    ? fieldData.awayDelaySec * 1e3
-    : config.awayDurationMillis);
+  config.awayDurationMillis =
+    config.loginDurationMillis +
+    (fieldData.awayDelaySec
+      ? fieldData.awayDelaySec * 1e3
+      : config.awayDurationMillis);
 
-  config.logoutDurationMillis = config.awayDurationMillis + (fieldData.logoutDelaySec
-    ? fieldData.logoutDelaySec * 1e3
-    : config.logoutDurationMillis);
+  config.logoutDurationMillis =
+    config.awayDurationMillis +
+    (fieldData.logoutDelaySec
+      ? fieldData.logoutDelaySec * 1e3
+      : config.logoutDurationMillis);
 
   config.removeDurationMillis = config.logoutDurationMillis + 30 * 1e3;
   config.playSounds = fieldData.useAudioAlerts ?? config.playSounds;
   config.alertVolume = fieldData.audioVolume / 100 ?? config.alertVolume;
-  config.usersToIgnore = fieldData.ignoreUsers?.split(",")?.map(s => s.toLowerCase().trim()) ?? []
+  config.usersToIgnore =
+    fieldData.ignoreUsers?.split(",")?.map((s) => s.toLowerCase().trim()) ?? [];
 }
 
 function configureGroups(fieldData) {
@@ -317,14 +336,12 @@ function removeUser(user) {
 }
 
 function setLogo(fieldData) {
-  console.log({fieldData})
   if (fieldData.showImage === false) {
-    $(".logo-image").addClass("hidden")
-    return
+    $(".logo-image").addClass("hidden");
+    return;
   }
 
   if (!fieldData?.image) {
-    console.log("Using default logo...");
     $(".logo-image img").attr("src", defaultImage);
   }
 }
@@ -337,7 +354,9 @@ function updateNumberInGroup(groupName) {
 }
 
 function setTitle(channelName, fieldData) {
-  title = fieldData.title || (channelName ? `${channelName}'s Buddy list` : "Buddy List");
+  title =
+    fieldData.title ||
+    (channelName ? `${channelName}'s Buddy list` : "Buddy List");
   $(".title-bar-text").text(title);
 }
 

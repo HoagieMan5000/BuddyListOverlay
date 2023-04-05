@@ -1,4 +1,4 @@
-const channel = "joplaysviolin";
+const channel = "andrewcore2";
 
 function isMod(username) {
   return username.length % 3 === 0;
@@ -36,3 +36,10 @@ const twitchClient = new TwitchChatClient(
   }
 );
 twitchClient.connect();
+
+const SE_API = {
+  store: {
+    set: () => {},
+    get: async () => {}
+  }
+}
