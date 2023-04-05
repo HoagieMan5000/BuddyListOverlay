@@ -13,8 +13,14 @@ const config = {
   removeDurationMillis: defaultLogoutDurationMillis + 30 * 1e3,
 
   ignoreBroadcaster: false,
+  usersToIgnore: [],
   playSounds: true,
   alertVolume: 0.6,
+};
+
+const defaultSounds = {
+  login: "https://hoagieman5000.github.io/BuddyListOverlay/audio/dooropen.wav",
+  logout: "https://hoagieman5000.github.io/BuddyListOverlay/audio/doorslam.wav",
 };
 
 const defaultImage =
@@ -63,8 +69,10 @@ window.onload = (event) => {
 window.addEventListener("onWidgetLoad", function (obj) {
   const detail = obj.detail;
   const fieldData = detail.fieldData;
+  const channelName = detail.channel.username;
 
-  setTitle(fieldData);
+  setTitle(channelName, fieldData);
+  setLogo(fieldData);
   configureGroups(fieldData);
   setConfiguration(fieldData);
 });
@@ -101,6 +109,10 @@ function handleMessage(eventData) {
   };
 
   if (config.ignoreBroadcaster && chatMessage.isBroadcaster) {
+    return;
+  }
+
+  if (config.usersToIgnore && config.usersToIgnore.includes(chatMessage.username?.toLowerCase())) {
     return;
   }
 
@@ -161,11 +173,11 @@ function updateUserStatuses() {
       setUserStatus(user);
       const userGroup = getUserGroup(user);
       updateNumberInGroup(userGroup.name);
-      audioToPlay.add(user.status)
+      audioToPlay.add(user.status);
     }
   });
 
-  [...audioToPlay.values()].forEach(type => playSound(type))
+  [...audioToPlay.values()].forEach((type) => playSound(type));
 
   removeUserIds.forEach((userId) => {
     const userGroup = getUserGroup(users[userId]);
@@ -181,13 +193,19 @@ function setConfiguration(fieldData) {
   config.loginDurationMillis = fieldData.loginDelaySec
     ? fieldData.loginDelaySec * 1e3
     : config.loginDurationMillis;
-  config.awayDurationMillis = fieldData.awayDelaySec
+
+  config.awayDurationMillis = config.loginDurationMillis + (fieldData.awayDelaySec
     ? fieldData.awayDelaySec * 1e3
-    : config.awayDurationMillis;
-  config.logoutDurationMillis = fieldData.logoutDelaySec
-    ? config.awayDurationMillis + fieldData.logoutDelaySec * 1e3
-    : config.logoutDurationMillis;
+    : config.awayDurationMillis);
+
+  config.logoutDurationMillis = config.awayDurationMillis + (fieldData.logoutDelaySec
+    ? fieldData.logoutDelaySec * 1e3
+    : config.logoutDurationMillis);
+
   config.removeDurationMillis = config.logoutDurationMillis + 30 * 1e3;
+  config.playSounds = fieldData.useAudioAlerts ?? config.playSounds;
+  config.alertVolume = fieldData.audioVolume / 100 ?? config.alertVolume;
+  config.usersToIgnore = fieldData.ignoreUsers?.split(",")?.map(s => s.toLowerCase().trim()) ?? []
 }
 
 function configureGroups(fieldData) {
@@ -217,7 +235,6 @@ function getUserGroup(user) {
 /* Rendering */
 
 function initialRender() {
-  setLogo();
   renderGroupContainers();
   renderGroups();
 }
@@ -299,9 +316,8 @@ function removeUser(user) {
   $(`#${getUserId(user)}`).remove();
 }
 
-function setLogo() {
-  const logoImgSrc = $(".logo-image img").attr("src");
-  if (logoImgSrc === "{{image}}") {
+function setLogo(fieldData) {
+  if (!fieldData?.image) {
     console.log("Using default logo...");
     $(".logo-image img").attr("src", defaultImage);
   }
@@ -314,8 +330,8 @@ function updateNumberInGroup(groupName) {
   $(`#group-${groupName} .group-number`).text(numUsersInGroup);
 }
 
-function setTitle(fieldData) {
-  title = fieldData.title || `${channelName}'s Buddy list`;
+function setTitle(channelName, fieldData) {
+  title = fieldData.title || (channelName ? `${channelName}'s Buddy list` : "Buddy List");
   $(".title-bar-text").text(title);
 }
 
@@ -333,13 +349,9 @@ const groupOpenIcon = `
 function playSound(type) {
   const vol = config.alertVolume ?? 1;
   if (config.playSounds) {
-    if (type === "login") {
-      const audio = new Audio("audio/dooropen.wav");
-      audio.loop = false;
-      audio.volume = vol;
-      audio.play();
-    } else if (type === "logout") {
-      const audio = new Audio("audio/doorslam.wav");
+    const file = defaultSounds[type];
+    if (file) {
+      const audio = new Audio(file);
       audio.loop = false;
       audio.volume = vol;
       audio.play();

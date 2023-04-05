@@ -9,30 +9,48 @@
     "label": "Image:",
     "value": ""
   },
+  "useAudioAlerts": {
+    "type": "checkbox",
+    "label": "Use Audio Alerts",
+    "value": false
+  },
+  "audioVolume": {
+    "type": "slider",
+    "label": "Audio Volume",
+    "value": 100,
+    "min": 0,
+    "max": 100,
+    "step": 1
+  },
   "useModGroup": {
     "type": "checkbox",
     "label": "Use Mod Group",
-    "value": "true"
+    "value": "true",
+    "group": "User Groups"
   },
   "modGroupLabel": {
     "type": "string",
     "label": "Mod Group Label:",
-    "value": "Mods"
+    "value": "Mods",
+    "group": "User Groups"
   },
   "useVipGroup": {
     "type": "checkbox",
     "label": "Use VIP Group",
-    "value": "true"
+    "value": "true",
+    "group": "User Groups"
   },
   "vipGroupLabel": {
     "type": "string",
     "label": "VIP Group Label:",
-    "value": "VIPs"
+    "value": "VIPs",
+    "group": "User Groups"
   },
   "friendsGroupLabel": {
     "type": "string",
     "label": "Friends Group Label:",
-    "value": "Friends"
+    "value": "Friends",
+    "group": "User Groups"
   },
   "ignoreBroadcaster": {
     "type": "checkbox",
@@ -42,16 +60,24 @@
   "loginDelaySec": {
     "type": "number",
     "label": "Login Delay (seconds)",
-    "value": 30
+    "value": 30,
+    "group": "User State Change Delays"
   },
   "awayDelaySec": {
     "type": "number",
     "label": "Away Delay (seconds)",
-    "value": 300
+    "value": 300,
+    "group": "User State Change Delays"
   },
   "logoutDelaySec": {
     "type": "number",
     "label": "Logout Delay (seconds)",
-    "value": 300
+    "value": 300,
+    "group": "User State Change Delays"
+  },
+  "ignoreUsers": {
+    "type": "string",
+    "label": "Users to Ignore (comma-separated list)",
+    "value": "nightbot, streamelements, streamlabs"
   }
 }

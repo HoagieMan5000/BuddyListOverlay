@@ -20,6 +20,7 @@
 .window-contents {
   align-items: stretch;
   flex-grow: 1;
+  overflow: hidden;
 }
 
 .tabs {
@@ -112,9 +113,6 @@
 .tab-contents {
   max-height: 100%;
   flex-grow: 1;
-  margin-top: -6px;
-  margin-right: -6px;
-  margin-left: -6px;
   border-width: 1px;
   border-style: solid;
   background-color: white;
