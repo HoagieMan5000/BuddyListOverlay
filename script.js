@@ -317,6 +317,12 @@ function removeUser(user) {
 }
 
 function setLogo(fieldData) {
+  console.log({fieldData})
+  if (fieldData.showImage === false) {
+    $(".logo-image").addClass("hidden")
+    return
+  }
+
   if (!fieldData?.image) {
     console.log("Using default logo...");
     $(".logo-image img").attr("src", defaultImage);

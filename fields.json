@@ -1,8 +1,22 @@
 {
+  "windowsStyle": {
+    "type": "dropdown",
+    "label": "Windows Style",
+    "value": "xp",
+    "options": {
+      "98": "Windows 98",
+      "xp": "Windows XP"
+    }
+  },
   "title": {
     "type": "string",
     "label": "Title:",
     "value": "My Buddy List"
+  },
+  "showImage": {
+    "type": "checkbox",
+    "label": "Show Image",
+    "value": true
   },
   "image": {
     "type": "image-input",

@@ -56,6 +56,7 @@
   flex-direction: column;
   width: 100%;
   justify-content: center;
+  margin-top: 3px;
 }
 
 .user-group {
@@ -131,12 +132,12 @@
 }
 
 .file-menu > p {
-  margin-right: 16px;
+  margin-right: 8px;
 }
 
 /* Utils */
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 .flex-row {
