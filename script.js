@@ -58,18 +58,20 @@ const defaultGroups = [
 
 const allStatuses = ["present", "login", "away", "logout"];
 
-let users = {};
+const userData = {
+  users: {}
+};
 
-setInterval(() => updateUsers(), config.statusCheckIntervalMillis);
-setInterval(() => SE_API.store.set("userData", users), 10000)
+setInterval(() => updateUsers(userData.users), config.statusCheckIntervalMillis);
+setInterval(() => SE_API.store.set("userData", userData.users), 10000)
 
 window.onload = (event) => {
   SE_API.store.get("userData").then((userData) => {
     if (userData) {
-      users = {
+      userData.users = {
         ...userData,
       };
-      updateUsers()
+      updateUsers(userData.users)
     }
     initialRender();
   });
@@ -128,27 +130,28 @@ function handleMessage(eventData) {
     return;
   }
 
-  const existingUser = users[eventData.userId];
+  const existingUser = userData.users[eventData.userId];
   const isNew = !existingUser || existingUser.status === "logout";
   if (isNew) {
-    users[eventData.userId] = {
+    userData.users[eventData.userId] = {
       ...chatMessage,
       firstMessageTimeMillis: chatMessage.timestamp,
     };
   } else {
-    users[eventData.userId] = {
+    userData.users[eventData.userId] = {
       ...chatMessage,
       firstMessageTimeMillis: existingUser.firstMessageTimeMillis,
+      status: existingUser.status,
     };
   }
 }
 
-function updateUsers() {
+function updateUsers(users) {
   // Update the user data
-  updateUserStatuses();
+  updateUserStatuses(users);
 }
 
-function updateUserStatuses() {
+function updateUserStatuses(users) {
   const now = Date.now();
 
   const removeUserIds = [];
@@ -173,7 +176,6 @@ function updateUserStatuses() {
     }
 
     if (timeSinceLastMessage > config.removeDurationMillis) {
-      changed = true;
       removeUserIds.push(user.userId);
     }
 
@@ -194,10 +196,10 @@ function updateUserStatuses() {
   [...audioToPlay.values()].forEach((type) => playSound(type));
 
   removeUserIds.forEach((userId) => {
-    const userGroup = getUserGroup(users[userId]);
-    removeUser(users[userId]);
+    const userGroup = getUserGroup(userData.users[userId]);
+    removeUser(userData.users[userId]);
     updateNumberInGroup(userGroup?.name);
-    delete users[userId];
+    delete userData.users[userId];
   });
 }
 
